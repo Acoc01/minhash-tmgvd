@@ -24,7 +24,9 @@ int main(int argc, char* argv[]){
     char b;
 
     for(int i = 0; i < e; ++i){
-        std::cin>>a>>b;
+        std::cin>>a;
+        getchar();
+        std::cin>>b;
         adj[a].push_back(b);
         std::cout<<"insertado\n";
     }
