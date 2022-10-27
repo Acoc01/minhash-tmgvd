@@ -2,16 +2,17 @@
 #include <iostream>
 #include <limits.h>
 #include <functional>
+#include <string>
 
-void init(std::vector<std::vector<int>> &adj, int v){
+void init(std::vector<std::vector<char>> &adj, int v){
     for(int i = 0; i < v; ++i){
-        std::vector<int> n;
+        std::vector<char> n;
         adj.push_back(n);
     }
 }
 
 int main(int argc, char* argv[]){
-    std::vector<std::vector<int>> adj;
+    std::vector<std::vector<char>> adj;
 
     int v,e;
     std::cin>>v>>e;
@@ -19,7 +20,8 @@ int main(int argc, char* argv[]){
     /*Making the adjacency lists*/
     init(adj,v);
     //std::cout<<adj.size()<<'\n'; 
-    int a,b;
+    int a;
+    char b;
 
     for(int i = 0; i < e; ++i){
         std::cin>>a>>b;
@@ -39,14 +41,16 @@ int main(int argc, char* argv[]){
     int P = 3;//Number of hash functions
     for(int i = 0; i < P; ++i){//For every hash function in P
         std::cout<<"Calculando Minhash\n";
-        std::hash<int> ph; //Init of hash function
+        std::hash<std::string> ph; //Init of hash function
         /*v-3 = v-k+1, 2-shingle*/
         for(int j = 0; j < v; ++j){//For every adjacency list
         /*abcdef => k = 2 => ab,bc,cd,de,ef => */
         long long int c_j = INT_MAX; // Set inf for the signatures[v_i][i]
             if(adj[j].size() > 2)
                 for(int k = 0; k < adj[j].size() - 1; ++k){//Get all the 2-shingles
-                    long long int shingle = adj[j][k] + adj[j][k+1];
+                    std::string shingle = "ab";
+                    shingle[0] = adj[j][k];
+                    shingle[1] = adj[j][k+1];
                     long long int h = ph(shingle);//Hash of the 2-shingle
                     c_j = std::min(h,c_j);//Choose the min between the new hash and the older one
                 }
@@ -63,6 +67,6 @@ int main(int argc, char* argv[]){
         }
         std::cout<<std::endl;
     }
-    
+
     return 0;
 }
