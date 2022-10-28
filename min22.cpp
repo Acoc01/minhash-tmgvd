@@ -20,6 +20,7 @@ unsigned hash_str(std::string s,int F, int A, int B)
 int main(int argc, char* argv[]){
     std::ifstream myfile; myfile.open("input");
 
+    std::map<long long int, int> mp;
     long long int v,a;
     std::string list;
     long long int l = 0;
@@ -59,16 +60,41 @@ int main(int argc, char* argv[]){
                 }
             }
             hashes.push_back(c_j);
+            if(c_j != INT_MAX)mp[c_j]++;
         }
         arr.push_back(hashes);
         l++;
     }
-    std::cout<<l<<'\n';
     for(int i=0;i<arr.size();i++){
         for(int j=0;j<P;j++){
             std::cout<<arr[i][j]<<"    ";
         }
         std::cout<<std::endl;
     }
+
+    std::map<long long int, int>::iterator it = mp.begin();
+    std::vector<std::vector<int>> clusters;
+    for(it; it != mp.end(); ++it){
+        //std::cout<<it->first<<' '<<it->second<<'\n';
+        std::vector<int> aux;
+        long long int key = it->first;
+        int value = it->second;
+        if(value > 1 && key != INT_MAX){
+            for(int i = 0; i < arr.size(); ++i){
+                long long int h1 = arr[i][0], h2 = arr[i][1];
+                if(h1 == key || h2 ==key){
+                    aux.push_back(i);
+                }
+            }
+            clusters.push_back(aux);
+        }
+    }
+    for(int i = 0; i < clusters.size();++i){
+        std::cout<<"Cluster "<<i<<" : ";
+        for(int j = 0; j < clusters[i].size(); ++j){
+            std::cout<<clusters[i][j]<<' ';
+        }std::cout<<'\n';
+    }
+
     return 0;
 }
