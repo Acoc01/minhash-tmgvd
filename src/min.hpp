@@ -32,7 +32,7 @@ namespace minhash{
     std::string list;
     long long int l = 0;
     int P = 2;
-    myfile >> v;
+    //myfile >> v;
     std::vector<std::vector<long long int> > arr;
     // std::cout << arr.size() << '\n';
     while (getline(myfile, list)) {

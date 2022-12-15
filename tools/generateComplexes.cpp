@@ -231,9 +231,12 @@ main(int argc, char* argv[]) {
         return 1;
     }
     //Vector que contiene los clusters obtenidos con el minhash
+    std::cout<<"Preparando Minhash para encontrar clusters\n";
     std::vector<std::vector<int>> v1 = minhash::min(args.datasetFileName);
+    std::cout<<"Se han obtenido "<<v1.size()<<" clusters\n";
     //Grafo con la listas de cada nodo para poder mapear los nodos de un cluster con todas sus aristas
     std::vector<std::vector<long long int>> gadj = minhash::graph;
+    std::cout<<"Preparando archivo para construir WGraphs de los clusters obtenidos\n";
     //Vector de WGraph, uno por cada cluster
     std::vector<WGraph> datasetWGraph;
     //Vector de punteros de WGraph para poder armar los dagForest
@@ -256,6 +259,8 @@ main(int argc, char* argv[]) {
         }if(flag==0)myfile<<"#\n";
     }
     myfile.close();
+    gadj.clear();
+    std::cout<<"Se creó el archivo que contiene los nodos en el formato correcto\n";
     // This mapping will apply to all the proteins seen from now
     ProteinsMap proteinMapping;
 
@@ -273,10 +278,11 @@ main(int argc, char* argv[]) {
                   << '\t' << proteinMapping.size() << " different proteins\n"
                   ;
     }
+    std::cout<<"Creando WGraphs\n";
     // Aqui modifique la funcion readDatasetFromFileWW ubicada en dapg_complexes/src/readFile.cpp
     datasetWGraph = readDatasetFromFileWW("clusters.txt", args.weightedDataset, proteinMapping);
-    std::cout<<args.outlinksSorting<<std::endl;
     //Introducimos los WGraph al vector de punteros
+    std::cout<<"WGraphs creados, preparandolos para ser mineables\n";
     for(int i = 0; i < datasetWGraph.size(); ++i){
         datasetGraph_ptr.push_back(&datasetWGraph[i]);
     }
@@ -296,19 +302,21 @@ main(int argc, char* argv[]) {
             return 1;
         }
     }
+    std::cout<<"WGraphs listos.\n";
     //Definimos contadores y vectores para guardar cantidad y elementos.
-    int cliques = 0; // Contador de cliques
-    int biclique_r = 0; // Contador de Bicliques Rigurosos (Interseccion de S y C vacia)
-    int biclique_nr = 0; // Contador de Bicliques no Rigurosos (Interseccion no vacia pero S != C)
+    long long int cliques = 0; // Contador de cliques
+    long long int biclique_r = 0; // Contador de Bicliques Rigurosos (Interseccion de S y C vacia)
+    long long int biclique_nr = 0; // Contador de Bicliques no Rigurosos (Interseccion no vacia pero S != C)
     std::vector<DenseSubGraph> vector_cliques;
     std::vector<DenseSubGraph> vector_bicliques;
     std::vector<DenseSubGraph> vector_bicliques_no_riguroso;
 
+    unsigned int totalDagsBuilt = 0;
+    int cont = 0;
     std::cout<<"Generating DagForests"<<std::endl;
     for(int i = 0; i < datasetGraph_ptr.size();++i){
         const DagForest myForest(*datasetGraph_ptr[i],args.partitioning,1);
         //std::cout<<"DagForest for cluster "<<i+1<<" ready"<<std::endl;
-        unsigned int totalDagsBuilt = 0;
         for (DagForest::const_iterator dit = myForest.begin(); dit != myForest.end(); ++dit) {
             const Dag& dag = **dit;
             const DenseSubGraphsMaximalSet dagDSGs = dag.getDenseSubGraphs(0,
@@ -318,19 +326,17 @@ main(int argc, char* argv[]) {
             if (dagDSGs.empty())
                 continue;
             // Indica el numero de dense sub graphs por cluster
-            std::cout<<"Number of Dense Sub Graphs for Cluster "<<i+1<<' '<<dagDSGs.size()<<'\n';
-            int cont = 1;
             for (std::vector<DenseSubGraph>::const_iterator it = dagDSGs.begin(); it != dagDSGs.end(); ++it) {
                 if(it->biClique()){
-                    vector_bicliques.push_back(*it);
+                    if(vector_bicliques.size() <= 10)vector_bicliques.push_back(*it);
                     biclique_r++;
                 }
                 if(it->clique()){
-                    vector_cliques.push_back(*it);
+                    if(vector_cliques.size()<=10)vector_cliques.push_back(*it);
                     cliques++;
                 }
                 if(!it->biClique() && !it->clique()){
-                    vector_bicliques_no_riguroso.push_back(*it);
+                    if(vector_bicliques_no_riguroso.size() <= 10)vector_bicliques_no_riguroso.push_back(*it);
                     biclique_nr++;
                 }
                 cont++;
@@ -345,7 +351,7 @@ main(int argc, char* argv[]) {
     
     Así que es recomendable omitir esto a la hora de testear o limitar la cantidad de elementos a escribir.*/
     std::ofstream res_file;
-    res_file.open("results.txt");
+    res_file.open("results_eu.txt");
     res_file << "BICLIQUES\n";
     for(int i = 0; i < vector_bicliques.size(); ++i){
         VertexSet S,C;
@@ -370,6 +376,7 @@ main(int argc, char* argv[]) {
             res_file << getProteinName(proteinMapping,*it)<< ' ';
         }res_file << '\n';
     }res_file << '\n';
+    res_file << "CLIQUES\n";
     for(int i = 0; i < vector_cliques.size(); ++i){
         VertexSet S,C;
         S = vector_cliques[i].getSources();
