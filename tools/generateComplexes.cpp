@@ -205,8 +205,8 @@ partitioningMsg(int partitioning) {
 int
 main(int argc, char* argv[]) {
 
-    clock_t start, finish;
-    double time;
+    clock_t start, finish, start_min,finish_min,start_wgraph, finish_wgraph, start_dag, finish_dag;
+    double total_time, min_time, minw_time, wgraph_con_time, wgraph_min_time, dag_total_time;
     start = clock();
 
 
@@ -232,8 +232,11 @@ main(int argc, char* argv[]) {
     }
     //Vector que contiene los clusters obtenidos con el minhash
     std::cout<<"Preparando Minhash para encontrar clusters\n";
+    start_min = clock();
     std::vector<std::vector<int>> v1 = minhash::min(args.datasetFileName);
-    std::cout<<"Se han obtenido "<<v1.size()<<" clusters\n";
+    finish_min = clock();
+    min_time = double(finish_min - start_min) / CLOCKS_PER_SEC;
+    std::cout<<"Se han obtenido "<<v1.size()<<" clusters en "<<min_time<<'\n';
     //Grafo con la listas de cada nodo para poder mapear los nodos de un cluster con todas sus aristas
     std::vector<std::vector<long long int>> gadj = minhash::graph;
     std::cout<<"Preparando archivo para construir WGraphs de los clusters obtenidos\n";
@@ -245,6 +248,7 @@ main(int argc, char* argv[]) {
     //Imprime un cluster con sus nodos y listas, luego agrega un # para indicar el final del cluster
     std::ofstream myfile;
     myfile.open("clusters.txt");
+    start_min = clock();
     for(int i = 0; i < v1.size(); ++i){
         int flag = 0;
         for(int j = 0; j < v1[i].size(); ++j){
@@ -260,7 +264,9 @@ main(int argc, char* argv[]) {
     }
     myfile.close();
     gadj.clear();
-    std::cout<<"Se creó el archivo que contiene los nodos en el formato correcto\n";
+    finish_min = clock();
+    minw_time = double(finish_min - start_min) / CLOCKS_PER_SEC;
+    std::cout<<"Se creó el archivo que contiene los nodos en el formato correcto en "<<minw_time<<'\n';
     // This mapping will apply to all the proteins seen from now
     ProteinsMap proteinMapping;
 
@@ -280,9 +286,13 @@ main(int argc, char* argv[]) {
     }
     std::cout<<"Creando WGraphs\n";
     // Aqui modifique la funcion readDatasetFromFileWW ubicada en dapg_complexes/src/readFile.cpp
+    start_wgraph = clock();
     datasetWGraph = readDatasetFromFileWW("clusters.txt", args.weightedDataset, proteinMapping);
+    finish_wgraph = clock();
+    wgraph_con_time = double(finish_wgraph - start_wgraph) / CLOCKS_PER_SEC;
     //Introducimos los WGraph al vector de punteros
-    std::cout<<"WGraphs creados, preparandolos para ser mineables\n";
+    std::cout<<"WGraphs creados en "<<wgraph_con_time<<", preparandolos para ser mineables\n";
+    start_wgraph = clock();
     for(int i = 0; i < datasetWGraph.size(); ++i){
         datasetGraph_ptr.push_back(&datasetWGraph[i]);
     }
@@ -302,7 +312,9 @@ main(int argc, char* argv[]) {
             return 1;
         }
     }
-    std::cout<<"WGraphs listos.\n";
+    finish_wgraph = clock();
+    wgraph_min_time = double(finish_wgraph - start_wgraph) / CLOCKS_PER_SEC;
+    std::cout<<"WGraphs listos en "<<wgraph_min_time<<'\n';
     //Definimos contadores y vectores para guardar cantidad y elementos.
     long long int cliques = 0; // Contador de cliques
     long long int biclique_r = 0; // Contador de Bicliques Rigurosos (Interseccion de S y C vacia)
@@ -314,6 +326,7 @@ main(int argc, char* argv[]) {
     unsigned int totalDagsBuilt = 0;
     int cont = 0;
     std::cout<<"Generating DagForests"<<std::endl;
+    start_dag = clock();
     for(int i = 0; i < datasetGraph_ptr.size();++i){
         const DagForest myForest(*datasetGraph_ptr[i],args.partitioning,1);
         //std::cout<<"DagForest for cluster "<<i+1<<" ready"<<std::endl;
@@ -345,6 +358,9 @@ main(int argc, char* argv[]) {
             totalDagsBuilt += dagDSGs.size();
         }
     }
+    finish_dag = clock();
+    dag_total_time = double(finish_dag - start_dag) / CLOCKS_PER_SEC;
+    std::cout<<"Dags creados y procesados en "<<dag_total_time<<'\n';
     /*La seccion que sigue se encarga de escribir en un archivo por separado los sets S y C dependiendo
     de si es un Biclique, Clique o Biclique no Riguroso, tarda demasiado en escribir todo porque debe
     hacer el mapeo inverso con getProteinName que se encuentra en typedefs.hpp
@@ -396,8 +412,8 @@ main(int argc, char* argv[]) {
     std::cout<< "Cliques: " << cliques << '\n';
     std::cout<< "Bicliques Rigurosos: " << biclique_r << '\n';
     std::cout<< "Bicliques no Rigurosos: " << biclique_nr << '\n';
-    time = double(finish - start) / CLOCKS_PER_SEC;
-    std::cerr << "\tDAPG execution time : " << time << '\n';
+    total_time = double(finish - start) / CLOCKS_PER_SEC;
+    std::cerr << "\tDAPG execution time : " << total_time << '\n';
 
     return 0;
 }
